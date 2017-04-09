@@ -23,8 +23,6 @@
 //Use Physics Handle to simulate movement with projectile
 void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	//ACharacter * Character = Cast<ACharacter>(OtherActor);
-	//AEvilEnemy * Character = Cast<AEvilEnemy>(OtherActor);
  	AMyEnemy * Character = Cast<AMyEnemy>(OtherActor);
 	USkeletalMeshComponent * SkeletalMesh = Cast<USkeletalMeshComponent>(OtherComp);
 
@@ -34,25 +32,18 @@ void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 	IgnoreActors.AddUnique(OtherActor);
 
 	USkeletalMeshComponent * Mesh = Character->GetMesh();
-	//Mesh->SetBodyNotifyRigidBodyCollision(true, SweepResult.BoneName);
 
-	//Mesh->SetAllBodiesSimulatePhysics(true);
-	Mesh->SetSimulatePhysics(true);
-	//Mesh->WakeAllRigidBodies();
-	//Mesh->SetComponentTickEnabled(false);
+	//Mesh->SetSimulatePhysics(true);
+	Mesh->SetAllBodiesBelowSimulatePhysics("pelvis", true);
+	Mesh->SetAllBodiesBelowPhysicsBlendWeight("pelvis", 1.0f);
 	Mesh->bShowPrePhysBones = true;
-	//Mesh->bBlendPhysics = true;
-	//Mesh->SetAllBodiesPhysicsBlendWeight(0.0);
 
 	UCharacterMovementComponent * CharacterMovement = Character->GetCharacterMovement();
 
 	CharacterMovement->StopMovementImmediately();
 	CharacterMovement->DisableMovement();
 	CharacterMovement->SetComponentTickEnabled(false);
-	//CharacterMovement->PrimaryComponentTick.SetTickFunctionEnable(false);
 	Character->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	//AStaticMeshActor* DuplicateMeshActor = GetWorld()->SpawnActorAbsolute<AStaticMeshActor>(OriginalMeshActor->GetClass(), OriginalMeshActor->GetTransform(), SpawnParams);
 
 	UPhysicsHandleComponent * PhysicsHandle = NewObject<UPhysicsHandleComponent>(this);
 
@@ -100,7 +91,8 @@ AStake::AStake()
 	RootComponent = CollisionComponent;
 
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
-	ProjectileMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
+	ProjectileMesh->SetupAttachment(RootComponent);
+	//ProjectileMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComponent"));
 	ProjectileMovement->UpdatedComponent = CollisionComponent;

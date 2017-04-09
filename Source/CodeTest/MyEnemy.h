@@ -31,6 +31,10 @@ public:
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 
+	//Idle animation
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation")
+	UAnimSequence * AnimIdle;
+
 	//Front GetUp animation
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation")
 	UAnimSequence * AnimFront;
@@ -47,7 +51,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation")
 	UAnimSequence * AnimRight;
 
-	void CheckFacingDirection();
+	bool IsLyingOnFace();
 
 	bool bIsGrabbed = false;
 
@@ -56,6 +60,8 @@ public:
 	bool bIsRagdoll = false;
 
 	bool bIsRecovering = false;
+
+	bool bIsPlayingGetUpAnim = false;
 
 	float PhysicsAlpha;
 

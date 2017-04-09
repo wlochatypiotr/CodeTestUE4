@@ -14,7 +14,8 @@ AWeapon::AWeapon()
 	RootComponent = CollisionComponent;
 
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WaponMesh"));
-	WeaponMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
+	WeaponMesh->SetupAttachment(RootComponent);
+	//WeaponMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
 }
 
 // Called when the game starts or when spawned

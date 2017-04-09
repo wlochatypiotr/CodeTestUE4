@@ -115,7 +115,6 @@ void ACodeTestCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
-
 	//spawn our weapon and attach it
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
