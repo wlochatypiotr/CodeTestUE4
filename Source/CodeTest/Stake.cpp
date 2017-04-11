@@ -33,11 +33,16 @@ void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 
 	USkeletalMeshComponent * Mesh = Character->GetMesh();
 
-	//Mesh->SetSimulatePhysics(true);
-	Mesh->SetAllBodiesBelowSimulatePhysics("pelvis", true);
-	Mesh->SetAllBodiesBelowPhysicsBlendWeight("pelvis", 1.0f);
+	//setup mesh physics behaviour
+	Mesh->SetSimulatePhysics(true);
+	Mesh->WakeAllRigidBodies();
+	Mesh->SetAllBodiesBelowSimulatePhysics("root", true);
+	Mesh->SetAllBodiesBelowPhysicsBlendWeight("root", 1.0f);
+	Mesh->bCollideWithEnvironment = true;
 	Mesh->bShowPrePhysBones = true;
+	Mesh->bBlendPhysics = true;
 
+	//setup character movement
 	UCharacterMovementComponent * CharacterMovement = Character->GetCharacterMovement();
 
 	CharacterMovement->StopMovementImmediately();
@@ -45,30 +50,24 @@ void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 	CharacterMovement->SetComponentTickEnabled(false);
 	Character->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	//create physics handle
 	UPhysicsHandleComponent * PhysicsHandle = NewObject<UPhysicsHandleComponent>(this);
 
 	PhysicsHandle->RegisterComponent();
-
 	PhysicsHandles.AddUnique(PhysicsHandle);
-	//PhysicsHandle->LinearStiffness = 10000.f;
-	//PhysicsHandle->SetLinearDamping(10000.f);
 	PhysicsHandle->SetLinearStiffness(1000.f);
-
-	//FAttachmentTransformRules rules(EAttachmentRule::KeepWorld, true);
-
-
-	//this->AttachToComponent(Character->GetMesh(), rules, SweepResult.BoneName);
 	
 	PhysicsHandle->GrabComponentAtLocation(SkeletalMesh, SweepResult.BoneName, SkeletalMesh->GetBoneLocation(SweepResult.BoneName));
 
-
+	//update character propoerties
 	Character->bIsGrabbed = true;
 	Character->bIsRagdoll = true;
-	//Character->bIsSimulatingPhysics = true;
 	Character->GrabbedBone = SweepResult.BoneName;
 	PiercedEnemy = Character;
 
 	SetLifeSpan(.35f);
+
+	//helper
 	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, SweepResult.BoneName.ToString() + "was hit and is now dragged by Stake");
 }
 
@@ -92,14 +91,13 @@ AStake::AStake()
 
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	ProjectileMesh->SetupAttachment(RootComponent);
-	//ProjectileMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComponent"));
 	ProjectileMovement->UpdatedComponent = CollisionComponent;
 	ProjectileMovement->InitialSpeed = 3000.0f;
 	ProjectileMovement->MaxSpeed = 3000.0f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
-	ProjectileMovement->bShouldBounce = true;
+	ProjectileMovement->bShouldBounce = false;
 
 	InitialLifeSpan = 5.f;
 }
@@ -126,9 +124,6 @@ void AStake::LifeSpanExpired()
 {
 	if (PiercedEnemy)
 	{
-		//PiercedEnemy->GetCharacterMovement()->Star;
-		//PiercedEnemy->GetCharacterMovement()->SetMovement();
-		//PiercedEnemy->GetCharacterMovement()->SetComponentTickEnabled(true);
 		PiercedEnemy->bIsGrabbed = false;
 		PiercedEnemy = nullptr;
 	}

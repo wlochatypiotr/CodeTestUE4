@@ -18,12 +18,6 @@ void AStakeGun::FireProjectile()
 		SpawnParams.Owner = this;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 		SpawnParams.Instigator = Instigator;
-		//GetWorld()->SpawnActor(ProjectileClass, MFLoc, MFRot, SpawnParams);
 		AStake *const Stake = GetWorld()->SpawnActor<AStake>(ProjectileClass, MFLoc, MFRot, SpawnParams);
-		if (Stake)
-		{
-			//FVector const Launch = MFRot.Vector();
-			//Stake->Init
-		}
 	}
 }

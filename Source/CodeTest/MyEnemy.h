@@ -5,7 +5,10 @@
 #include "Engine.h"
 #include "Runtime/Engine/Classes/Animation/AnimInstance.h"
 #include "Runtime/Engine/Classes/Animation/AnimMontage.h"
+#include "Runtime/Engine/Classes/Animation/BlendSpace1D.h"
+#include "Runtime/Engine/Classes/PhysicsEngine/PhysicsConstraintComponent.h"
 #include "GameFramework/Character.h"
+#include "MyAnimInstance.h"
 #include "MyEnemy.generated.h"
 
 UCLASS()
@@ -51,7 +54,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation")
 	UAnimSequence * AnimRight;
 
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Anims")
+	UBlendSpace1D *BlendSpace;
+
+	//check character oreintation
 	bool IsLyingOnFace();
+
+	//for state tracking
+	bool bIsInactive = false;
 
 	bool bIsGrabbed = false;
 
@@ -64,6 +74,10 @@ public:
 	bool bIsPlayingGetUpAnim = false;
 
 	float PhysicsAlpha;
+
+	float inactivationTime = 0.2f;
+
+	float Timer = 0.0f;
 
 	FName GrabbedBone;
 };
