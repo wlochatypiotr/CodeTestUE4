@@ -1,0 +1,16 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{1E5C2ECB-4876-06E2-1A8E-E7AC92CDA822}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "CodeTest",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+		}
+	]
+}

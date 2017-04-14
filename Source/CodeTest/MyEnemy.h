@@ -6,6 +6,7 @@
 #include "Runtime/Engine/Classes/Animation/AnimInstance.h"
 #include "Runtime/Engine/Classes/Animation/AnimMontage.h"
 #include "Runtime/Engine/Classes/Animation/BlendSpace1D.h"
+#include "Runtime/Engine/Classes/Animation/AnimSingleNodeInstance.h"
 #include "Runtime/Engine/Classes/PhysicsEngine/PhysicsConstraintComponent.h"
 #include "GameFramework/Character.h"
 #include "MyAnimInstance.h"
@@ -55,10 +56,33 @@ public:
 	UAnimSequence * AnimRight;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Anims")
-	UBlendSpace1D *BlendSpace;
+	UBlendSpace1D *AnimBlendSpaceFront;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Anims")
+	UBlendSpace1D *AnimBlendSpaceBack;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Anims")
+	UBlendSpace1D *AnimBlendSpaceLeft;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Anims")
+	UBlendSpace1D *AnimBlendSpaceRight;
+
+	enum class ECharacterOreintation
+	{
+		FRONT,
+		BACK,
+		LEFT,
+		RIGHT
+	};
+
+	ECharacterOreintation MeshOrientation;
+
+	void CheckMeshOrientation();
 
 	//check character oreintation
-	bool IsLyingOnFace();
+	bool IsLyingOnFace(float& distance);
+
+	bool IsLyingOnRightSide(float& distance);
 
 	//for state tracking
 	bool bIsInactive = false;
@@ -80,5 +104,9 @@ public:
 	float Timer = 0.0f;
 
 	FName GrabbedBone;
+
+	UAnimMontage* Montage;
+
+	FRotator RotationBoneAxis;
 };
  

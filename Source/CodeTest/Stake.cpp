@@ -62,6 +62,8 @@ void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 	//update character propoerties
 	Character->bIsGrabbed = true;
 	Character->bIsRagdoll = true;
+	Character->bIsRecovering = false;
+	Character->bIsPlayingGetUpAnim = false;
 	Character->GrabbedBone = SweepResult.BoneName;
 	PiercedEnemy = Character;
 

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Animation/AnimInstance.h"
+#include "MyEnemy.h"
 #include "MyAnimInstance.generated.h"
 
 /**
@@ -14,6 +15,18 @@ class CODETEST_API UMyAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 	
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		bool bIsRagdoll;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		bool bIsRecovering;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+		float physicsBlendWeigth;
+
+	UFUNCTION(BlueprintCallable, Category = "UpdateAnimationProperties")
+		void UpdateAnimationProperties();
+
 		//Idle animation
 		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation")
 		UAnimSequence * AnimIdle;
