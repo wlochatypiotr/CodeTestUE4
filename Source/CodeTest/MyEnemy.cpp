@@ -44,34 +44,45 @@ void AMyEnemy::Tick(float DeltaTime)
 	////////////////////////////////////////DONE////////////////////////////////////////////
 	GetMesh()->UpdateComponentToWorld();
 	//make capsule follow the mesh
-	if (bIsRagdoll /*&& !bIsRecovering*/)
+	if (bIsRagdoll && !bIsRecovering)
 	{
 		PelvisLoc = GetMesh()->GetBoneLocation("pelvis") + FVector(0.0f, 0.0f, 88.0f);
 		GetCapsuleComponent()->SetWorldLocation(PelvisLoc);
 	}
 
 	FVector vel = GetMesh()->GetPhysicsLinearVelocity("pelvis");
+	//make ragdoll still when it's impaled
+	if (bIsImpaled && vel.IsNearlyZero(1.5f) && bShouldBeStill)
+	{
+		GetMesh()->Deactivate();
+		this->SetActorTickEnabled(false);
+	}
 	if (!bIsImpaled && !bIsGrabbed && vel.IsNearlyZero(1.5f) && bIsRagdoll && !bIsRecovering )
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, this->GetName() + " actor is starting recovery");
 		PhysicsAlpha = 1.0f;
 
-		RotationBoneAxis = GetMesh()->GetBoneAxis("PELVIS", EAxis::X).Rotation(); //get ragdoll orientation
+		RotationBoneAxis = GetMesh()->GetBoneAxis("pelvis", EAxis::X).Rotation(); //get ragdoll orientation
 		RotationBoneAxis.Pitch = 0.0f;
 		RotationBoneAxis.Roll = 0.0f;
 		
+		//GetMesh()->PutAllRigidBodiesToSleep();
+		//GetMesh()->SetAllBodiesSimulatePhysics(false);
+		//GetMesh()->PlayAnimation(AnimFront, false);
 
+		//bIsRagdoll = false;
 		bIsRecovering = true;
+
 
 		GetMesh()->GetAnimInstance()->Montage_Stop(0.0f);
 
 	}
-
+	
 	if (bIsRecovering)
 	{
-		PhysicsAlpha -= DeltaTime / 1.0f;
-		FVector BlendParams(100.0f *(1.0f-PhysicsAlpha), 0.0f, 0.0f);
-		GetMesh()->GetSingleNodeInstance()->SetBlendSpaceInput(BlendParams);
+		PhysicsAlpha -= DeltaTime / 2.0f;
+		//FVector BlendParams(100.0f *(1.0f-PhysicsAlpha), 0.0f, 0.0f);
+		//GetMesh()->GetSingleNodeInstance()->SetBlendSpaceInput(BlendParams);
 		//if true recovery is complete, restore values to intial ones
 		if (PhysicsAlpha <= 0)
 		{
@@ -81,10 +92,10 @@ void AMyEnemy::Tick(float DeltaTime)
 			GetMesh()->SetAllBodiesBelowSimulatePhysics("root", false);
 
 			//reattach capsule and it's properties
-			GetCapsuleComponent()->SetWorldRotation(RotationBoneAxis);
-			GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
-			GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -88.0f));
-			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+			//GetCapsuleComponent()->SetWorldRotation(RotationBoneAxis);
+			//GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
+			//GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -88.0f));
+			//GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 
 			//enable character movement
 			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
@@ -93,10 +104,10 @@ void AMyEnemy::Tick(float DeltaTime)
 			bIsRagdoll = false;
 			bIsPlayingGetUpAnim = false;
 
-			GetMesh()->PlayAnimation(AnimIdle, true);
+			//GetMesh()->PlayAnimation(AnimIdle, true);
 		}
 		//update blend weight
-		GetMesh()->SetAllBodiesBelowPhysicsBlendWeight("root",PhysicsAlpha);
+		GetMesh()->SetAllBodiesBelowPhysicsBlendWeight("pelvis",PhysicsAlpha);
 
 		if (!bIsPlayingGetUpAnim && bIsRecovering)
 		{
@@ -111,6 +122,8 @@ void AMyEnemy::Tick(float DeltaTime)
 				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up front");
 				RotationBoneAxis.Yaw += 180.0f;
 
+				GetMesh()->SetWorldRotation(RotationBoneAxis);
+
 			}
 			else if (MeshOrientation == ECharacterOreintation::BACK)
 			{
@@ -119,6 +132,7 @@ void AMyEnemy::Tick(float DeltaTime)
 				GetMesh()->PlayAnimation(AnimBack, false);
 				bIsPlayingGetUpAnim = true;
 				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up back");
+				GetMesh()->SetWorldRotation(RotationBoneAxis);
 			}
 			else if (MeshOrientation == ECharacterOreintation::LEFT)
 			{
@@ -130,6 +144,7 @@ void AMyEnemy::Tick(float DeltaTime)
 				bIsPlayingGetUpAnim = true;
 				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up left");
 				RotationBoneAxis.Yaw += 270.0f;
+				GetMesh()->SetWorldRotation(RotationBoneAxis);
 			}
 			else if (MeshOrientation == ECharacterOreintation::RIGHT)
 			{
@@ -141,10 +156,12 @@ void AMyEnemy::Tick(float DeltaTime)
 				bIsPlayingGetUpAnim = true;
 				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up right");
 				RotationBoneAxis.Yaw += 90.0f;
+				GetMesh()->SetWorldRotation(RotationBoneAxis);
 			}
 		}
 
 	}
+	
 	/*
 
 	//check if we stopped moving if yes we need to start getting up
@@ -241,6 +258,7 @@ void AMyEnemy::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPri
 
 					bIsInactive = true;
 					bIsImpaled = true;
+					bShouldBeStill = true;
 				}
 			}
 		}

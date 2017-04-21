@@ -97,6 +97,8 @@ public:
 
 	bool bIsPlayingGetUpAnim = false;
 
+	bool bShouldBeStill = false;
+
 	float PhysicsAlpha;
 
 	float inactivationTime = 0.2f;

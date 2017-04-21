@@ -34,10 +34,11 @@ void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 	USkeletalMeshComponent * Mesh = Character->GetMesh();
 
 	//setup mesh physics behaviour
+	Mesh->Activate();
 	Mesh->SetSimulatePhysics(true);
 	Mesh->WakeAllRigidBodies();
-	Mesh->SetAllBodiesBelowSimulatePhysics("root", true);
-	Mesh->SetAllBodiesBelowPhysicsBlendWeight("root", 1.0f);
+	Mesh->SetAllBodiesBelowSimulatePhysics("pelvis", true);
+	Mesh->SetAllBodiesBelowPhysicsBlendWeight("pelvis", 1.0f);
 	Mesh->bCollideWithEnvironment = true;
 	Mesh->bShowPrePhysBones = true;
 	Mesh->bBlendPhysics = true;
@@ -60,10 +61,12 @@ void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 	PhysicsHandle->GrabComponentAtLocation(SkeletalMesh, SweepResult.BoneName, SkeletalMesh->GetBoneLocation(SweepResult.BoneName));
 
 	//update character propoerties
+	Character->SetActorTickEnabled(true);
 	Character->bIsGrabbed = true;
 	Character->bIsRagdoll = true;
 	Character->bIsRecovering = false;
 	Character->bIsPlayingGetUpAnim = false;
+	Character->bShouldBeStill = false;
 	Character->GrabbedBone = SweepResult.BoneName;
 	PiercedEnemy = Character;
 
@@ -101,6 +104,7 @@ AStake::AStake()
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
 
+
 	InitialLifeSpan = 5.f;
 }
 
@@ -115,11 +119,14 @@ void AStake::BeginPlay()
 void AStake::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	float  vel = ProjectileMovement->Velocity.Size();
+	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow,"Projectile velocity is: " + FString::SanitizeFloat(vel) );
 	for (UPhysicsHandleComponent * PhysicsHandle : PhysicsHandles)
 	{
-			PhysicsHandle->SetTargetLocation(RootComponent->GetComponentLocation());
+			PhysicsHandle->SetTargetLocation(CollisionComponent->GetComponentLocation());
 	}
+	CollisionComponent->AddForceAtLocation(FVector(1000.0f, 10.f, 10.0f), GetActorLocation());
+	
 }
 
 void AStake::LifeSpanExpired()
