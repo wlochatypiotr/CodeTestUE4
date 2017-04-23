@@ -38,7 +38,16 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		float AirDensity;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+		float Mass;
+
+	float KineticEnergy;
+
 	float ResistingArea;
+
+	bool bDidHitWall = false;
+
+	FVector velocity;
 
 	UFUNCTION()
 		virtual void OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

@@ -12,13 +12,24 @@ void AStake::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimi
 
 	if (Character == nullptr || SkeletalMesh == nullptr || (OtherActor != nullptr && IgnoreActors.Contains(OtherActor)))
 		return;
-
-	IgnoreActors.AddUnique(OtherActor);
-	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
 	USkeletalMeshComponent * Mesh = Character->GetMesh();
 
+	IgnoreActors.AddUnique(OtherActor);
+	//lets say 10 % of energy is lost on impact
+	//float HitBody = 80.f;
+	//float newVelocity = FMath::Sqrt(2 * KineticEnergy / (Mass + HitBody));
+	//FVector vel = CollisionComponent->GetForwardVector() * newVelocity;
+	//CollisionComponent->SetPhysicsLinearVelocity(vel, false);
+	//CollisionComponent->AddImpulseAtLocation(-vel, CollisionComponent->GetComponentLocation());
+	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CollisionComponent->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Overlap);
+	AirDensity *= Character->StakeResistanceFactor;
+	Mass += Mesh->GetMass();
+	
+
+
 	//setup mesh physics behaviour
+	float mas = Mesh->GetMass();
 	Mesh->Activate();
 	Mesh->SetSimulatePhysics(true);
 	Mesh->WakeAllRigidBodies();
@@ -35,13 +46,14 @@ void AStake::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimi
 	CharacterMovement->DisableMovement();
 	CharacterMovement->SetComponentTickEnabled(false);
 	Character->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
 
 	//create physics handle
 	UPhysicsHandleComponent * PhysicsHandle = NewObject<UPhysicsHandleComponent>(this);
 
 	PhysicsHandle->RegisterComponent();
 	PhysicsHandles.AddUnique(PhysicsHandle);
-	//PhysicsHandle->SetLinearStiffness(1000.f);
+	PhysicsHandle->SetLinearStiffness(1000.f);
 
 
 	PhysicsHandle->GrabComponentAtLocation(SkeletalMesh, Hit.BoneName, SkeletalMesh->GetBoneLocation(Hit.BoneName));
@@ -54,23 +66,12 @@ void AStake::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimi
 	Character->bIsPlayingGetUpAnim = false;
 	Character->bShouldBeStill = false;
 	Character->GrabbedBone = Hit.BoneName;
+	Character->currStake = this;
 	PiercedEnemy = Character;
 
 	SetLifeSpan(.35f);
 
-	//helper
 	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, Hit.BoneName.ToString() + "was hit and is now dragged by Stake");
-	/*if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComponent != nullptr))
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, TEXT("'OnHit' called at Stake site"));
-		OtherComponent->AddImpulseAtLocation(GetVelocity() * 100.f, GetActorLocation());
-		Destroy();
-		AEnemy * Enemy = Cast<AEnemy>(OtherActor);
-		if (Enemy)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, TEXT("You just hit ana enemy"));
-		}
-	}*/
 }
 
 //Use Physics Handle to simulate movement with projectile
@@ -111,7 +112,6 @@ void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 	PhysicsHandle->RegisterComponent();
 	PhysicsHandles.AddUnique(PhysicsHandle);
 	//PhysicsHandle->SetLinearStiffness(1000.f);
-	
 	
 	PhysicsHandle->GrabComponentAtLocation(SkeletalMesh, SweepResult.BoneName, SkeletalMesh->GetBoneLocation(SweepResult.BoneName));
 
@@ -175,20 +175,32 @@ void AStake::BeginPlay()
 void AStake::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	float  vel = ProjectileMovement->Velocity.Size();
+
 	float velo = this->GetVelocity().Size();
+
+	//for some reason after hit speed goes to max so to supress that I set max speed in every tick
+	ProjectileMovement->MaxSpeed = velo;
 
 	//compute drag force from drag force equation, divide by million to switch from meters to cm
 	float drag = 0.5f * AirDensity * FMath::Pow(velo, 2.0) * DragCoefficent * ResistingArea / 1000000;
 
+	//apply drag force
+	CollisionComponent->AddForceAtLocation(-CollisionComponent->GetForwardVector() * drag, GetActorLocation());
+
 	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow,"Projectile velocity is: " + FString::SanitizeFloat(velo) + "drag is: " + FString::SanitizeFloat(drag) );
 	for (UPhysicsHandleComponent * PhysicsHandle : PhysicsHandles)
 	{
-			PhysicsHandle->SetTargetLocation(CollisionComponent->GetComponentLocation());
+			AMyEnemy* enemy = Cast<AMyEnemy>(PhysicsHandle->GetGrabbedComponent()->GetOwner());
+			//this allows for only one impalement but prevent ragdoll twitching
+			if (enemy && !enemy->bIsImpaled)
+			{
+				PhysicsHandle->SetTargetLocation(CollisionComponent->GetComponentLocation());
+				CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			}
 	}
-	//CollisionComponent->AddImpulseAtLocation(-CollisionComponent->GetForwardVector() * drag, GetActorLocation());
-	CollisionComponent->AddForceAtLocation(-CollisionComponent->GetForwardVector() * drag, GetActorLocation());
-	
+	KineticEnergy = Mass * FMath::Pow(velo, 2.0) * 0.5f / 10000;
+	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, "Projectile kinetic energy is: " + FString::SanitizeFloat(KineticEnergy));
+
 }
 
 void AStake::LifeSpanExpired()
@@ -196,6 +208,7 @@ void AStake::LifeSpanExpired()
 	if (PiercedEnemy)
 	{
 		PiercedEnemy->bIsGrabbed = false;
+		PiercedEnemy->currStake = nullptr;
 		PiercedEnemy = nullptr;
 	}
 	Super::LifeSpanExpired();

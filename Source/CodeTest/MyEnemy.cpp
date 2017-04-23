@@ -181,12 +181,12 @@ void AMyEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AMyEnemy::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (bIsGrabbed)
+	if (bIsGrabbed && currStake)
 	{
 		//check if we hit a static mesh actor
 		AStaticMeshActor* Wall = Cast<AStaticMeshActor>(OtherActor);
 		//make sure if we hit a mesh and we are active for a new constraint creation
-		if (bIsGrabbed && Wall && !bIsInactive)
+		if (bIsGrabbed && Wall && !bIsInactive && currStake->KineticEnergy > 3500.f)
 		{
 			//Create new constraint
 			{

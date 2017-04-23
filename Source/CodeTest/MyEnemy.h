@@ -12,6 +12,8 @@
 #include "MyAnimInstance.h"
 #include "MyEnemy.generated.h"
 
+class AStake;
+
 UCLASS()
 class CODETEST_API AMyEnemy : public ACharacter
 {
@@ -75,6 +77,10 @@ public:
 		RIGHT
 	};
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	float StakeResistanceFactor;
+
+
 	ECharacterOreintation MeshOrientation;
 
 	void CheckMeshOrientation();
@@ -84,6 +90,7 @@ public:
 
 	bool IsLyingOnRightSide(float& distance);
 
+	AStake* currStake = nullptr;
 	//for state tracking
 	bool bIsInactive = false;
 
