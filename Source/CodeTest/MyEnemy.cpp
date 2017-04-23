@@ -81,6 +81,7 @@ void AMyEnemy::Tick(float DeltaTime)
 	if (bIsRecovering)
 	{
 		PhysicsAlpha -= DeltaTime / 2.0f;
+		GetMesh()->PutAllRigidBodiesToSleep();
 		//FVector BlendParams(100.0f *(1.0f-PhysicsAlpha), 0.0f, 0.0f);
 		//GetMesh()->GetSingleNodeInstance()->SetBlendSpaceInput(BlendParams);
 		//if true recovery is complete, restore values to intial ones
@@ -111,121 +112,65 @@ void AMyEnemy::Tick(float DeltaTime)
 
 		if (!bIsPlayingGetUpAnim && bIsRecovering)
 		{
-			CheckMeshOrientation();
-			if (MeshOrientation == ECharacterOreintation::FRONT)
-			{
-				//GetMesh()->PlayAnimation(AnimBlendSpaceFront, false);
-				//GetMesh()->GetSingleNodeInstance()->SetBlendSpaceInput(BlendParams);
-				//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimFront, "default");
-				GetMesh()->PlayAnimation(AnimFront, false);
-				bIsPlayingGetUpAnim = true;
-				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up front");
-				RotationBoneAxis.Yaw += 180.0f;
+			//GetMesh()->GetAnimInstance()->Montage_Stop(0.0f);
+			GetMesh()->Stop();
+			//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimFront, "default");
+			GetMesh()->PlayAnimation(AnimFront, false);
+			bIsPlayingGetUpAnim = true;
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up front");
+			RotationBoneAxis.Yaw += 180.0f;
+			GetMesh()->SetWorldRotation(RotationBoneAxis);
 
-				GetMesh()->SetWorldRotation(RotationBoneAxis);
+			//CheckMeshOrientation();
+			//if (MeshOrientation == ECharacterOreintation::FRONT)
+			//{
+			//	//GetMesh()->PlayAnimation(AnimBlendSpaceFront, false);
+			//	//GetMesh()->GetSingleNodeInstance()->SetBlendSpaceInput(BlendParams);
+			//	//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimFront, "default");
+			//	GetMesh()->PlayAnimation(AnimFront, false);
+			//	bIsPlayingGetUpAnim = true;
+			//	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up front");
+			//	RotationBoneAxis.Yaw += 180.0f;
 
-			}
-			else if (MeshOrientation == ECharacterOreintation::BACK)
-			{
-				//GetMesh()->PlayAnimation(AnimBlendSpaceBack, false);
-				//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimBack, "default");
-				GetMesh()->PlayAnimation(AnimBack, false);
-				bIsPlayingGetUpAnim = true;
-				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up back");
-				GetMesh()->SetWorldRotation(RotationBoneAxis);
-			}
-			else if (MeshOrientation == ECharacterOreintation::LEFT)
-			{
-				//getup left
-				//GetMesh()->PlayAnimation(AnimBlendSpaceLeft, false);
-				//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimLeft, "default");
-				GetMesh()->PlayAnimation(AnimLeft, false);
+			//	GetMesh()->SetWorldRotation(RotationBoneAxis);
 
-				bIsPlayingGetUpAnim = true;
-				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up left");
-				RotationBoneAxis.Yaw += 270.0f;
-				GetMesh()->SetWorldRotation(RotationBoneAxis);
-			}
-			else if (MeshOrientation == ECharacterOreintation::RIGHT)
-			{
-				//get up right
-				//GetMesh()->PlayAnimation(AnimBlendSpaceRight, false);
-				//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimRight, "default");
-				GetMesh()->PlayAnimation(AnimRight, false);
+			//}
+			//else if (MeshOrientation == ECharacterOreintation::BACK)
+			//{
+			//	//GetMesh()->PlayAnimation(AnimBlendSpaceBack, false);
+			//	//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimBack, "default");
+			//	GetMesh()->PlayAnimation(AnimBack, false);
+			//	bIsPlayingGetUpAnim = true;
+			//	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up back");
+			//	GetMesh()->SetWorldRotation(RotationBoneAxis);
+			//}
+			//else if (MeshOrientation == ECharacterOreintation::LEFT)
+			//{
+			//	//getup left
+			//	//GetMesh()->PlayAnimation(AnimBlendSpaceLeft, false);
+			//	//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimLeft, "default");
+			//	GetMesh()->PlayAnimation(AnimLeft, false);
 
-				bIsPlayingGetUpAnim = true;
-				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up right");
-				RotationBoneAxis.Yaw += 90.0f;
-				GetMesh()->SetWorldRotation(RotationBoneAxis);
-			}
+			//	bIsPlayingGetUpAnim = true;
+			//	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up left");
+			//	RotationBoneAxis.Yaw += 270.0f;
+			//	GetMesh()->SetWorldRotation(RotationBoneAxis);
+			//}
+			//else if (MeshOrientation == ECharacterOreintation::RIGHT)
+			//{
+			//	//get up right
+			//	//GetMesh()->PlayAnimation(AnimBlendSpaceRight, false);
+			//	//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimRight, "default");
+			//	GetMesh()->PlayAnimation(AnimRight, false);
+			//	bIsPlayingGetUpAnim = true;
+			//	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up right");
+			//	RotationBoneAxis.Yaw += 90.0f;
+			//	GetMesh()->SetWorldRotation(RotationBoneAxis);
+			//}
 		}
 
 	}
 	
-	/*
-
-	//check if we stopped moving if yes we need to start getting up
-	FVector vel = GetMesh()->GetPhysicsLinearVelocity("pelvis");
-	if (!bIsImpaled && !bIsGrabbed && vel.IsNearlyZero(0.5f) && bIsRagdoll && !bIsRecovering)
-	{
-		bIsRecovering = true;
-		PhysicsAlpha = 1.0f;
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, this->GetName() + " actor is starting recovery");
-	}
-
-	///////////////////////////////	RECOVERY PART/////////////////////////////////////
-	if (bIsRecovering)
-	{
-		//with the time change we need to change physics alpha
-w		PhysicsAlpha -= DeltaTime /10.0f;
-
-		//getting up is complete
-		if (PhysicsAlpha < 0)
-		{
-			PhysicsAlpha = 0.0;
-
-			//update blend weight
-			GetMesh()->SetAllBodiesBelowPhysicsBlendWeight("pelvis", PhysicsAlpha);
-
-			bIsRagdoll = false;
-			bIsRecovering = false;
-			GetMesh()->PutAllRigidBodiesToSleep();
-			GetMesh()->SetAllBodiesSimulatePhysics(false);
-			GetMesh()->SetComponentTickEnabled(true);
-
-			//go back to idle animation
-			GetMesh()->PlayAnimation(AnimIdle, true);
-			//also it rotates mesh back to capsule rotation
-			//this makes mesh pop up from ground
-			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
-			GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -88.0f));
-
-			bIsPlayingGetUpAnim = false;
-
-			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, this->GetName() + " actor has finished recovery - disabling physics simulation ");
-		}
-		
-		//update blend weight
-		GetMesh()->SetAllBodiesBelowPhysicsBlendWeight("pelvis", PhysicsAlpha);
-
-		//choosing the right animation
-		if (!bIsPlayingGetUpAnim && bIsRecovering)
-		{
-			if (IsLyingOnFace())
-			{
-				//GetMesh()->PlayAnimation(AnimFront, false);
-				bIsPlayingGetUpAnim = true;
-
-			}
-			if (!IsLyingOnFace())
-			{
-				//GetMesh()->PlayAnimation(AnimBack, false);
-				bIsPlayingGetUpAnim = true;
-			}
-		}	
-	}
-	*/
 }
 
 // Called to bind functionality to input

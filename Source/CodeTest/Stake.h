@@ -30,8 +30,21 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Config")
 		UStaticMeshComponent* ProjectileMesh;
 
+	//Value that needs to be set for a specific shape of object
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+		float DragCoefficent;
+
+	//Air density in kg per cubic meter
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+		float AirDensity;
+
+	float ResistingArea;
+
 	UFUNCTION()
 		virtual void OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+		virtual void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 
 protected:
 	// Called when the game starts or when spawned

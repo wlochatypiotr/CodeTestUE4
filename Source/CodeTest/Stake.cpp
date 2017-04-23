@@ -5,31 +5,16 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 
 
-//void AStake::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
-//{
-//	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComponent != nullptr))
-//	{
-//		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, TEXT("'OnHit' called at Stake site"));
-//		OtherComponent->AddImpulseAtLocation(GetVelocity() * 100.f, GetActorLocation());
-//		Destroy();
-//		AEnemy * Enemy = Cast<AEnemy>(OtherActor);
-//		if (Enemy)
-//		{
-//			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, TEXT("You just hit ana enemy"));
-//		}
-//	}
-//}
-
-//Use Physics Handle to simulate movement with projectile
-void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AStake::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
- 	AMyEnemy * Character = Cast<AMyEnemy>(OtherActor);
-	USkeletalMeshComponent * SkeletalMesh = Cast<USkeletalMeshComponent>(OtherComp);
+	AMyEnemy * Character = Cast<AMyEnemy>(OtherActor);
+	USkeletalMeshComponent * SkeletalMesh = Cast<USkeletalMeshComponent>(OtherComponent);
 
 	if (Character == nullptr || SkeletalMesh == nullptr || (OtherActor != nullptr && IgnoreActors.Contains(OtherActor)))
 		return;
 
 	IgnoreActors.AddUnique(OtherActor);
+	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	USkeletalMeshComponent * Mesh = Character->GetMesh();
 
@@ -56,7 +41,77 @@ void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 
 	PhysicsHandle->RegisterComponent();
 	PhysicsHandles.AddUnique(PhysicsHandle);
-	PhysicsHandle->SetLinearStiffness(1000.f);
+	//PhysicsHandle->SetLinearStiffness(1000.f);
+
+
+	PhysicsHandle->GrabComponentAtLocation(SkeletalMesh, Hit.BoneName, SkeletalMesh->GetBoneLocation(Hit.BoneName));
+
+	//update character propoerties
+	Character->SetActorTickEnabled(true);
+	Character->bIsGrabbed = true;
+	Character->bIsRagdoll = true;
+	Character->bIsRecovering = false;
+	Character->bIsPlayingGetUpAnim = false;
+	Character->bShouldBeStill = false;
+	Character->GrabbedBone = Hit.BoneName;
+	PiercedEnemy = Character;
+
+	SetLifeSpan(.35f);
+
+	//helper
+	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, Hit.BoneName.ToString() + "was hit and is now dragged by Stake");
+	/*if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComponent != nullptr))
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, TEXT("'OnHit' called at Stake site"));
+		OtherComponent->AddImpulseAtLocation(GetVelocity() * 100.f, GetActorLocation());
+		Destroy();
+		AEnemy * Enemy = Cast<AEnemy>(OtherActor);
+		if (Enemy)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, TEXT("You just hit ana enemy"));
+		}
+	}*/
+}
+
+//Use Physics Handle to simulate movement with projectile
+void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+ 	AMyEnemy * Character = Cast<AMyEnemy>(OtherActor);
+	USkeletalMeshComponent * SkeletalMesh = Cast<USkeletalMeshComponent>(OtherComp);
+
+	if (Character == nullptr || SkeletalMesh == nullptr || (OtherActor != nullptr && IgnoreActors.Contains(OtherActor)))
+		return;
+
+	IgnoreActors.AddUnique(OtherActor);
+
+
+	USkeletalMeshComponent * Mesh = Character->GetMesh();
+
+	//setup mesh physics behaviour
+	Mesh->Activate();
+	Mesh->SetSimulatePhysics(true);
+	Mesh->WakeAllRigidBodies();
+	Mesh->SetAllBodiesBelowSimulatePhysics("pelvis", true);
+	Mesh->SetAllBodiesBelowPhysicsBlendWeight("pelvis", 1.0f);
+	Mesh->bCollideWithEnvironment = true;
+	Mesh->bShowPrePhysBones = true;
+	Mesh->bBlendPhysics = true;
+
+	//setup character movement
+	UCharacterMovementComponent * CharacterMovement = Character->GetCharacterMovement();
+
+	CharacterMovement->StopMovementImmediately();
+	CharacterMovement->DisableMovement();
+	CharacterMovement->SetComponentTickEnabled(false);
+	Character->GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	//create physics handle
+	UPhysicsHandleComponent * PhysicsHandle = NewObject<UPhysicsHandleComponent>(this);
+
+	PhysicsHandle->RegisterComponent();
+	PhysicsHandles.AddUnique(PhysicsHandle);
+	//PhysicsHandle->SetLinearStiffness(1000.f);
+	
 	
 	PhysicsHandle->GrabComponentAtLocation(SkeletalMesh, SweepResult.BoneName, SkeletalMesh->GetBoneLocation(SweepResult.BoneName));
 
@@ -86,7 +141,7 @@ AStake::AStake()
 	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComp"));
 	CollisionComponent->InitSphereRadius(5.0f);
 	CollisionComponent->GetBodyInstance()->SetCollisionProfileName("Projectile");
-	//CollisionComponent->OnComponentHit.AddDynamic(this, &AStake::OnHit);
+	CollisionComponent->OnComponentHit.AddDynamic(this, &AStake::OnHit);
 	CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AStake::OnActorBeginOverlap);
 
 	CollisionComponent->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.f));
@@ -104,8 +159,9 @@ AStake::AStake()
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
 
-
 	InitialLifeSpan = 5.f;
+
+	ResistingArea = 3.141592 * FMath::Pow((CollisionComponent->GetScaledSphereRadius()), 2.0f);
 }
 
 // Called when the game starts or when spawned
@@ -120,12 +176,18 @@ void AStake::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	float  vel = ProjectileMovement->Velocity.Size();
-	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow,"Projectile velocity is: " + FString::SanitizeFloat(vel) );
+	float velo = this->GetVelocity().Size();
+
+	//compute drag force from drag force equation, divide by million to switch from meters to cm
+	float drag = 0.5f * AirDensity * FMath::Pow(velo, 2.0) * DragCoefficent * ResistingArea / 1000000;
+
+	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow,"Projectile velocity is: " + FString::SanitizeFloat(velo) + "drag is: " + FString::SanitizeFloat(drag) );
 	for (UPhysicsHandleComponent * PhysicsHandle : PhysicsHandles)
 	{
 			PhysicsHandle->SetTargetLocation(CollisionComponent->GetComponentLocation());
 	}
-	CollisionComponent->AddForceAtLocation(FVector(1000.0f, 10.f, 10.0f), GetActorLocation());
+	//CollisionComponent->AddImpulseAtLocation(-CollisionComponent->GetForwardVector() * drag, GetActorLocation());
+	CollisionComponent->AddForceAtLocation(-CollisionComponent->GetForwardVector() * drag, GetActorLocation());
 	
 }
 
