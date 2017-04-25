@@ -41,6 +41,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		float Mass;
 
+	//Sets minimum angle at which impale can occur 0.0 - any angle, 1.0 - 90.0
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+		float Sharpness;
+
 	float KineticEnergy;
 
 	float ResistingArea;

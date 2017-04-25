@@ -8,6 +8,7 @@
 #include "Runtime/Engine/Classes/Animation/BlendSpace1D.h"
 #include "Runtime/Engine/Classes/Animation/AnimSingleNodeInstance.h"
 #include "Runtime/Engine/Classes/PhysicsEngine/PhysicsConstraintComponent.h"
+#include "Runtime/Engine/Classes/PhysicsEngine/BodySetup.h"
 #include "GameFramework/Character.h"
 #include "MyAnimInstance.h"
 #include "MyEnemy.generated.h"
@@ -77,11 +78,21 @@ public:
 		RIGHT
 	};
 
+	//Determines speed decrease after stake impacts mesh
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 	float StakeResistanceFactor;
 
+	//If stake energy is bigger than this value on impact mesh will get impaled
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	float KineticEnergyThreshold;
+
+	TArray<int16> BoneIndices;
 
 	ECharacterOreintation MeshOrientation;
+
+	UAnimSequence * CurrentGetUpAnim;
+
+	float CurrentAnimPosition;
 
 	void CheckMeshOrientation();
 
@@ -90,11 +101,15 @@ public:
 
 	bool IsLyingOnRightSide(float& distance);
 
+	void ChooseGetUpAnimation();
+
+	FTransform AMyEnemy::GetBoneTransformAtTime(UAnimSequence* MyAnimSequence, float AnimTime, int16 BoneIdx, bool bUseRawDataOnly);
+
 	AStake* currStake = nullptr;
 	//for state tracking
 	bool bIsInactive = false;
 
-	bool bIsGrabbed = false;
+	//bool bIsGrabbed = false;
 
 	bool bIsImpaled = false;
 

@@ -5,6 +5,7 @@
 #include "MyEnemy.h"
 
 
+
 // Sets default values
 
 
@@ -14,6 +15,7 @@ AMyEnemy::AMyEnemy()
 	PrimaryActorTick.bCanEverTick = true;
 	GetMesh()->Activate(true);
 	GetMesh()->OnComponentHit.AddDynamic(this, &AMyEnemy::OnHit);
+
 }
 
 // Called when the game starts or when spawned
@@ -21,6 +23,12 @@ void AMyEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 	GetMesh()->PlayAnimation(AnimIdle, true);
+
+	for (FBodyInstance* c : GetMesh()->Bodies)
+	{
+		int16 index = c->InstanceBoneIndex;
+		BoneIndices.Push(index);
+	}
 }
 
 // Called every frame
@@ -57,7 +65,7 @@ void AMyEnemy::Tick(float DeltaTime)
 		GetMesh()->Deactivate();
 		this->SetActorTickEnabled(false);
 	}
-	if (!bIsImpaled && !bIsGrabbed && vel.IsNearlyZero(1.5f) && bIsRagdoll && !bIsRecovering )
+	if (!bIsImpaled && !currStake/* !bIsGrabbed*/ && vel.IsNearlyZero(1.5f) && bIsRagdoll && !bIsRecovering )
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, this->GetName() + " actor is starting recovery");
 		PhysicsAlpha = 1.0f;
@@ -66,6 +74,7 @@ void AMyEnemy::Tick(float DeltaTime)
 		RotationBoneAxis.Pitch = 0.0f;
 		RotationBoneAxis.Roll = 0.0f;
 		
+	
 		//GetMesh()->PutAllRigidBodiesToSleep();
 		//GetMesh()->SetAllBodiesSimulatePhysics(false);
 		//GetMesh()->PlayAnimation(AnimFront, false);
@@ -80,12 +89,13 @@ void AMyEnemy::Tick(float DeltaTime)
 	
 	if (bIsRecovering)
 	{
+		CurrentAnimPosition = GetMesh()->GetPosition();
 		PhysicsAlpha -= DeltaTime / 2.0f;
 		GetMesh()->PutAllRigidBodiesToSleep();
 		//FVector BlendParams(100.0f *(1.0f-PhysicsAlpha), 0.0f, 0.0f);
 		//GetMesh()->GetSingleNodeInstance()->SetBlendSpaceInput(BlendParams);
 		//if true recovery is complete, restore values to intial ones
-		if (PhysicsAlpha <= 0)
+		if (PhysicsAlpha <= 0 && CurrentAnimPosition == CurrentGetUpAnim->GetPlayLength())
 		{
 			PhysicsAlpha = 0.0f;
 
@@ -93,10 +103,9 @@ void AMyEnemy::Tick(float DeltaTime)
 			GetMesh()->SetAllBodiesBelowSimulatePhysics("root", false);
 
 			//reattach capsule and it's properties
-			//GetCapsuleComponent()->SetWorldRotation(RotationBoneAxis);
-			//GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
-			//GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -88.0f));
-			//GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+			GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
+			GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -88.0f));
+			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 			//enable character movement
 			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
@@ -105,17 +114,19 @@ void AMyEnemy::Tick(float DeltaTime)
 			bIsRagdoll = false;
 			bIsPlayingGetUpAnim = false;
 
-			//GetMesh()->PlayAnimation(AnimIdle, true);
+			GetMesh()->PlayAnimation(AnimIdle, true);
 		}
 		//update blend weight
 		GetMesh()->SetAllBodiesBelowPhysicsBlendWeight("pelvis",PhysicsAlpha);
 
 		if (!bIsPlayingGetUpAnim && bIsRecovering)
 		{
-			//GetMesh()->GetAnimInstance()->Montage_Stop(0.0f);
+			//ChoseGetUpAnimation
+			CurrentGetUpAnim = AnimFront;
+			CurrentAnimPosition = 0.0f;
+
 			GetMesh()->Stop();
-			//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimFront, "default");
-			GetMesh()->PlayAnimation(AnimFront, false);
+			GetMesh()->PlayAnimation(CurrentGetUpAnim, false);
 			bIsPlayingGetUpAnim = true;
 			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up front");
 			RotationBoneAxis.Yaw += 180.0f;
@@ -181,12 +192,18 @@ void AMyEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AMyEnemy::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (bIsGrabbed && currStake)
+	if (currStake)
 	{
 		//check if we hit a static mesh actor
 		AStaticMeshActor* Wall = Cast<AStaticMeshActor>(OtherActor);
+
+		//check angle
+		FVector vel = currStake->GetActorForwardVector();
+		FVector normal = -Hit.ImpactNormal;
+		float res = FVector::DotProduct(vel, normal);
+
 		//make sure if we hit a mesh and we are active for a new constraint creation
-		if (bIsGrabbed && Wall && !bIsInactive && currStake->KineticEnergy > 3500.f)
+		if (currStake && Wall && !bIsInactive && currStake->KineticEnergy > KineticEnergyThreshold && res > currStake->Sharpness)
 		{
 			//Create new constraint
 			{
@@ -433,4 +450,64 @@ bool AMyEnemy::IsLyingOnRightSide(float &distance)
 		distance = HitLeft.Distance;
 	}
 	return res;
+}
+
+void AMyEnemy::ChooseGetUpAnimation()
+{
+	USkeletalMeshComponent * SkeletalMesh = GetMesh();
+	UAnimSequence * CurrentAnim = AnimIdle;
+
+	//iterate over all animations from which we are choosing best fitting one
+	{
+		//obtain every bone transform 
+		for (int16 c : BoneIndices)
+		{
+
+			FName boneName = SkeletalMesh->GetBoneName(c);
+			FTransform rootWorld = SkeletalMesh->GetBoneTransform(SkeletalMesh->GetBoneIndex("root"));
+
+
+			//now we have wolrd transform...
+			//obtain local transform of ragdoll
+			FTransform ragdollTransform = SkeletalMesh->GetBoneTransform(c);
+			FTransform relativeT = ragdollTransform.GetRelativeTransform(rootWorld);
+
+			/*FBodyInstance* bone = SkeletalMesh->GetBodyInstance(boneName);
+			int32 shapes;
+			physx::PxShape* currShape = *bone->GetAllShapes(shapes).GetData();
+			FTransform relative = bone->GetRelativeBodyTransform(currShape);
+
+			USceneComponent*  comp = SkeletalMesh->GetChildComponent(c);
+			FTransform rel = comp->GetRelativeTransform();*/
+
+
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, relativeT.ToString());
+			
+
+			//get transform from animation at time = 0.0f relative to the parent i.e. root bone
+			FTransform animTransform = GetBoneTransformAtTime(CurrentAnim, 0.0f, c, true);
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, animTransform.ToString());
+
+			//compare transforms and store the result
+			bool result = ragdollTransform.Equals(animTransform, 0.9f);
+			if (result)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, SkeletalMesh->GetBoneName(c).ToString() + " bone is almost in same place as in animation");
+			}
+		}
+	}
+
+}
+
+FTransform AMyEnemy::GetBoneTransformAtTime(UAnimSequence* MyAnimSequence, float AnimTime, int16 BoneIdx, bool bUseRawDataOnly)
+{
+	const TArray<FTrackToSkeletonMap> & TrackToSkeletonMap = bUseRawDataOnly ? MyAnimSequence->GetRawTrackToSkeletonMapTable() : MyAnimSequence->GetCompressedTrackToSkeletonMapTable();
+
+	if ((TrackToSkeletonMap.Num() > 0) && (TrackToSkeletonMap[0].BoneTreeIndex == 0))
+	{
+		FTransform BoneTransform;
+		MyAnimSequence->GetBoneTransform(BoneTransform, BoneIdx, AnimTime, bUseRawDataOnly);
+		return BoneTransform;
+	}
+	return FTransform::Identity;
 }

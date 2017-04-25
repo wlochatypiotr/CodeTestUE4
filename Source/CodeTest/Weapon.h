@@ -86,5 +86,5 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
 		TSubclassOf<class AStake> ProjectileClass;
 
-
+	float Timer;
 };

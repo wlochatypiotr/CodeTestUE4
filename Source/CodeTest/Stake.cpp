@@ -12,32 +12,25 @@ void AStake::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimi
 
 	if (Character == nullptr || SkeletalMesh == nullptr || (OtherActor != nullptr && IgnoreActors.Contains(OtherActor)))
 		return;
-	USkeletalMeshComponent * Mesh = Character->GetMesh();
 
 	IgnoreActors.AddUnique(OtherActor);
-	//lets say 10 % of energy is lost on impact
-	//float HitBody = 80.f;
-	//float newVelocity = FMath::Sqrt(2 * KineticEnergy / (Mass + HitBody));
-	//FVector vel = CollisionComponent->GetForwardVector() * newVelocity;
-	//CollisionComponent->SetPhysicsLinearVelocity(vel, false);
-	//CollisionComponent->AddImpulseAtLocation(-vel, CollisionComponent->GetComponentLocation());
+
 	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CollisionComponent->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Overlap);
 	AirDensity *= Character->StakeResistanceFactor;
-	Mass += Mesh->GetMass();
+	Mass += SkeletalMesh->GetMass();
 	
 
-
 	//setup mesh physics behaviour
-	float mas = Mesh->GetMass();
-	Mesh->Activate();
-	Mesh->SetSimulatePhysics(true);
-	Mesh->WakeAllRigidBodies();
-	Mesh->SetAllBodiesBelowSimulatePhysics("pelvis", true);
-	Mesh->SetAllBodiesBelowPhysicsBlendWeight("pelvis", 1.0f);
-	Mesh->bCollideWithEnvironment = true;
-	Mesh->bShowPrePhysBones = true;
-	Mesh->bBlendPhysics = true;
+	float mas = SkeletalMesh->GetMass();
+	SkeletalMesh->Activate();
+	SkeletalMesh->SetSimulatePhysics(true);
+	SkeletalMesh->WakeAllRigidBodies();
+	SkeletalMesh->SetAllBodiesBelowSimulatePhysics("pelvis", true);
+	SkeletalMesh->SetAllBodiesBelowPhysicsBlendWeight("pelvis", 1.0f);
+	SkeletalMesh->bCollideWithEnvironment = true;
+	SkeletalMesh->bShowPrePhysBones = true;
+	SkeletalMesh->bBlendPhysics = true;
 
 	//setup character movement
 	UCharacterMovementComponent * CharacterMovement = Character->GetCharacterMovement();
@@ -60,7 +53,7 @@ void AStake::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimi
 
 	//update character propoerties
 	Character->SetActorTickEnabled(true);
-	Character->bIsGrabbed = true;
+	//Character->bIsGrabbed = true;
 	Character->bIsRagdoll = true;
 	Character->bIsRecovering = false;
 	Character->bIsPlayingGetUpAnim = false;
@@ -117,7 +110,7 @@ void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 
 	//update character propoerties
 	Character->SetActorTickEnabled(true);
-	Character->bIsGrabbed = true;
+	//Character->bIsGrabbed = true;
 	Character->bIsRagdoll = true;
 	Character->bIsRecovering = false;
 	Character->bIsPlayingGetUpAnim = false;
@@ -207,7 +200,7 @@ void AStake::LifeSpanExpired()
 {
 	if (PiercedEnemy)
 	{
-		PiercedEnemy->bIsGrabbed = false;
+		//PiercedEnemy->bIsGrabbed = false;
 		PiercedEnemy->currStake = nullptr;
 		PiercedEnemy = nullptr;
 	}

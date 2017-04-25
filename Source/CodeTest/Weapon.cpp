@@ -51,30 +51,33 @@ void AWeapon::ProcessInstantHit(const FHitResult &Impact, const FVector &Origin,
 void AWeapon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	Timer += DeltaTime;
 
 }
 
 void AWeapon::Fire()
 {
-	if (ProjectileType == EProjectileType::Bullet)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, TEXT("Bullet"));
-		InstantFire();
-	}
-	if (ProjectileType == EProjectileType::Spread)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, TEXT("Spread"));
-		for (int32 i = 0; i <= WeaponConfig.WeaponSpread; ++i)
+
+		Timer = 0.0f;
+		if (ProjectileType == EProjectileType::Bullet)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, TEXT("Bullet"));
 			InstantFire();
 		}
-	}
-	if (ProjectileType == EProjectileType::Projectile)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, TEXT("Projectile"));
-		FireProjectile();
-	}
-
+		if (ProjectileType == EProjectileType::Spread)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, TEXT("Spread"));
+			for (int32 i = 0; i <= WeaponConfig.WeaponSpread; ++i)
+			{
+				InstantFire();
+			}
+		}
+		if (ProjectileType == EProjectileType::Projectile)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, TEXT("Projectile"));
+			FireProjectile();
+		}
+	
 
 }
 
