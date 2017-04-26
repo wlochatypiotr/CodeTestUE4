@@ -36,9 +36,10 @@ void AMyEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	//ChooseGetUpAnimation();
+
 	//to hold ragdoll rotation
 	FVector PelvisLoc;
-	////////////////////////////////////////DONE////////////////////////////////////////////
 	//this timer prevents creation of multiple constraints on hit
 	if (bIsInactive)
 	{
@@ -49,7 +50,7 @@ void AMyEnemy::Tick(float DeltaTime)
 			Timer = 0.0f;
 		}
 	}
-	////////////////////////////////////////DONE////////////////////////////////////////////
+
 	GetMesh()->UpdateComponentToWorld();
 	//make capsule follow the mesh
 	if (bIsRagdoll && !bIsRecovering)
@@ -59,13 +60,15 @@ void AMyEnemy::Tick(float DeltaTime)
 	}
 
 	FVector vel = GetMesh()->GetPhysicsLinearVelocity("pelvis");
+
 	//make ragdoll still when it's impaled
 	if (bIsImpaled && vel.IsNearlyZero(1.5f) && bShouldBeStill)
 	{
 		GetMesh()->Deactivate();
 		this->SetActorTickEnabled(false);
 	}
-	if (!bIsImpaled && !currStake/* !bIsGrabbed*/ && vel.IsNearlyZero(1.5f) && bIsRagdoll && !bIsRecovering )
+
+	if (!bIsImpaled && !currStake && vel.IsNearlyZero(1.5f) && bIsRagdoll && !bIsRecovering )
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, this->GetName() + " actor is starting recovery");
 		PhysicsAlpha = 1.0f;
@@ -74,27 +77,16 @@ void AMyEnemy::Tick(float DeltaTime)
 		RotationBoneAxis.Pitch = 0.0f;
 		RotationBoneAxis.Roll = 0.0f;
 		
-	
-		//GetMesh()->PutAllRigidBodiesToSleep();
-		//GetMesh()->SetAllBodiesSimulatePhysics(false);
-		//GetMesh()->PlayAnimation(AnimFront, false);
-
-		//bIsRagdoll = false;
 		bIsRecovering = true;
-
-
-		GetMesh()->GetAnimInstance()->Montage_Stop(0.0f);
-
 	}
 	
 	if (bIsRecovering)
 	{
 		CurrentAnimPosition = GetMesh()->GetPosition();
-		PhysicsAlpha -= DeltaTime / 2.0f;
+		PhysicsAlpha -= DeltaTime / 1.5f;
 		GetMesh()->PutAllRigidBodiesToSleep();
-		//FVector BlendParams(100.0f *(1.0f-PhysicsAlpha), 0.0f, 0.0f);
-		//GetMesh()->GetSingleNodeInstance()->SetBlendSpaceInput(BlendParams);
-		//if true recovery is complete, restore values to intial ones
+
+		//if true recovery is complete, restore values to initial ones
 		if (PhysicsAlpha <= 0 && CurrentAnimPosition == CurrentGetUpAnim->GetPlayLength())
 		{
 			PhysicsAlpha = 0.0f;
@@ -114,6 +106,7 @@ void AMyEnemy::Tick(float DeltaTime)
 			bIsRagdoll = false;
 			bIsPlayingGetUpAnim = false;
 
+			//play idle animation
 			GetMesh()->PlayAnimation(AnimIdle, true);
 		}
 		//update blend weight
@@ -121,63 +114,54 @@ void AMyEnemy::Tick(float DeltaTime)
 
 		if (!bIsPlayingGetUpAnim && bIsRecovering)
 		{
-			//ChoseGetUpAnimation
-			CurrentGetUpAnim = AnimFront;
+			GetMesh()->Stop();
+			CurrentAnimPosition = 0.0f;
+			bIsPlayingGetUpAnim = true;
 			CurrentAnimPosition = 0.0f;
 
-			GetMesh()->Stop();
-			GetMesh()->PlayAnimation(CurrentGetUpAnim, false);
-			bIsPlayingGetUpAnim = true;
-			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up front");
-			RotationBoneAxis.Yaw += 180.0f;
-			GetMesh()->SetWorldRotation(RotationBoneAxis);
+			//Here i would put part with choosing animation based on a ragdoll pose
+			//1.Search for the most appropriate animation - ChooseGetUpAnimation();
+			//2.Set CurrentGetUpAnim to found animation
+			//3.Run the animation
 
-			//CheckMeshOrientation();
-			//if (MeshOrientation == ECharacterOreintation::FRONT)
-			//{
-			//	//GetMesh()->PlayAnimation(AnimBlendSpaceFront, false);
-			//	//GetMesh()->GetSingleNodeInstance()->SetBlendSpaceInput(BlendParams);
-			//	//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimFront, "default");
-			//	GetMesh()->PlayAnimation(AnimFront, false);
-			//	bIsPlayingGetUpAnim = true;
-			//	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up front");
-			//	RotationBoneAxis.Yaw += 180.0f;
+			//This part is as it was before
+			//////////////////////////////////////////////////////////////////////////////////////////
+			CheckMeshOrientation();
+			if (MeshOrientation == ECharacterOreintation::FRONT)
+			{
+				GetMesh()->PlayAnimation(AnimFront, false);
+				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up front");
+				RotationBoneAxis.Yaw += 180.0f;
 
-			//	GetMesh()->SetWorldRotation(RotationBoneAxis);
+				GetMesh()->SetWorldRotation(RotationBoneAxis);
+				CurrentGetUpAnim = AnimFront;
 
-			//}
-			//else if (MeshOrientation == ECharacterOreintation::BACK)
-			//{
-			//	//GetMesh()->PlayAnimation(AnimBlendSpaceBack, false);
-			//	//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimBack, "default");
-			//	GetMesh()->PlayAnimation(AnimBack, false);
-			//	bIsPlayingGetUpAnim = true;
-			//	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up back");
-			//	GetMesh()->SetWorldRotation(RotationBoneAxis);
-			//}
-			//else if (MeshOrientation == ECharacterOreintation::LEFT)
-			//{
-			//	//getup left
-			//	//GetMesh()->PlayAnimation(AnimBlendSpaceLeft, false);
-			//	//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimLeft, "default");
-			//	GetMesh()->PlayAnimation(AnimLeft, false);
+			}
+			else if (MeshOrientation == ECharacterOreintation::BACK)
+			{
+				GetMesh()->PlayAnimation(AnimBack, false);
+				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up back");
+				GetMesh()->SetWorldRotation(RotationBoneAxis);
+				CurrentGetUpAnim = AnimBack;
+			}
+			else if (MeshOrientation == ECharacterOreintation::LEFT)
+			{
+				GetMesh()->PlayAnimation(AnimLeft, false);
+				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up left");
+				RotationBoneAxis.Yaw += 270.0f;
+				GetMesh()->SetWorldRotation(RotationBoneAxis);
+				CurrentGetUpAnim = AnimLeft;
+			}
+			else if (MeshOrientation == ECharacterOreintation::RIGHT)
+			{
 
-			//	bIsPlayingGetUpAnim = true;
-			//	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up left");
-			//	RotationBoneAxis.Yaw += 270.0f;
-			//	GetMesh()->SetWorldRotation(RotationBoneAxis);
-			//}
-			//else if (MeshOrientation == ECharacterOreintation::RIGHT)
-			//{
-			//	//get up right
-			//	//GetMesh()->PlayAnimation(AnimBlendSpaceRight, false);
-			//	//GetMesh()->GetAnimInstance()->PlaySlotAnimationAsDynamicMontage(AnimRight, "default");
-			//	GetMesh()->PlayAnimation(AnimRight, false);
-			//	bIsPlayingGetUpAnim = true;
-			//	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up right");
-			//	RotationBoneAxis.Yaw += 90.0f;
-			//	GetMesh()->SetWorldRotation(RotationBoneAxis);
-			//}
+				GetMesh()->PlayAnimation(AnimRight, false);
+				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, "playing get up right");
+				RotationBoneAxis.Yaw += 90.0f;
+				GetMesh()->SetWorldRotation(RotationBoneAxis);
+				CurrentGetUpAnim = AnimRight;
+			}
+			///////////////////////////////////////////////////////////////////////////////////////////////
 		}
 
 	}
@@ -458,19 +442,24 @@ void AMyEnemy::ChooseGetUpAnimation()
 	UAnimSequence * CurrentAnim = AnimIdle;
 
 	//iterate over all animations from which we are choosing best fitting one
+	//for( every animation in the pool)
 	{
-		//obtain every bone transform 
+		//obtain every bone transform or maybe just some key bones - performance should be checked
 		for (int16 c : BoneIndices)
 		{
 
 			FName boneName = SkeletalMesh->GetBoneName(c);
+			//root world transform
 			FTransform rootWorld = SkeletalMesh->GetBoneTransform(SkeletalMesh->GetBoneIndex("root"));
 
 
-			//now we have wolrd transform...
-			//obtain local transform of ragdoll
+			//this actually gives us world transform...
 			FTransform ragdollTransform = SkeletalMesh->GetBoneTransform(c);
+
+			//I tried to get relative transform but it's not consistent with the data that I get from animation sequence
 			FTransform relativeT = ragdollTransform.GetRelativeTransform(rootWorld);
+
+			FVector bleh = SkeletalMesh->GetBoneLocation(boneName, EBoneSpaces::ComponentSpace);
 
 			/*FBodyInstance* bone = SkeletalMesh->GetBodyInstance(boneName);
 			int32 shapes;
@@ -478,22 +467,29 @@ void AMyEnemy::ChooseGetUpAnimation()
 			FTransform relative = bone->GetRelativeBodyTransform(currShape);
 
 			USceneComponent*  comp = SkeletalMesh->GetChildComponent(c);
-			FTransform rel = comp->GetRelativeTransform();*/
-
-
-			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, relativeT.ToString());
-			
+			FTransform rel = comp->GetRelativeTransform();*/			
 
 			//get transform from animation at time = 0.0f relative to the parent i.e. root bone
-			FTransform animTransform = GetBoneTransformAtTime(CurrentAnim, 0.0f, c, true);
-			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, animTransform.ToString());
+			FTransform animTransform;
+			CurrentAnim->GetBoneTransform(animTransform, c, 0.0f, true);
+
+			if (boneName == "head")
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, relativeT.ToString());
+				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, animTransform.ToString());
+				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green, bleh.ToString());
+			}
 
 			//compare transforms and store the result
-			bool result = ragdollTransform.Equals(animTransform, 0.9f);
+			//here we should compare how close to actual position from animation we are 
+			//for example calculate the difference between every bone position
+			//sum up the result
+			//choose animation with the lowest difference
+			/*bool result = ragdollTransform.Equals(animTransform, 0.9f);
 			if (result)
 			{
 				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, SkeletalMesh->GetBoneName(c).ToString() + " bone is almost in same place as in animation");
-			}
+			}*/
 		}
 	}
 

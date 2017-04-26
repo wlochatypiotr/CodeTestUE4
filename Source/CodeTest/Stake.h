@@ -69,8 +69,6 @@ public:
 
 	virtual void LifeSpanExpired() override;
 
-	AMyEnemy * PiercedEnemy;
-
-	
+	AMyEnemy * PiercedEnemy;	
 	
 };

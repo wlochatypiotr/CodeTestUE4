@@ -21,7 +21,7 @@ void AStake::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimi
 	Mass += SkeletalMesh->GetMass();
 	
 
-	//setup mesh physics behaviour
+	//setup mesh physics behavior
 	float mas = SkeletalMesh->GetMass();
 	SkeletalMesh->Activate();
 	SkeletalMesh->SetSimulatePhysics(true);
@@ -51,9 +51,8 @@ void AStake::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimi
 
 	PhysicsHandle->GrabComponentAtLocation(SkeletalMesh, Hit.BoneName, SkeletalMesh->GetBoneLocation(Hit.BoneName));
 
-	//update character propoerties
+	//update character properties
 	Character->SetActorTickEnabled(true);
-	//Character->bIsGrabbed = true;
 	Character->bIsRagdoll = true;
 	Character->bIsRecovering = false;
 	Character->bIsPlayingGetUpAnim = false;
@@ -81,7 +80,7 @@ void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 
 	USkeletalMeshComponent * Mesh = Character->GetMesh();
 
-	//setup mesh physics behaviour
+	//setup mesh physics behavior
 	Mesh->Activate();
 	Mesh->SetSimulatePhysics(true);
 	Mesh->WakeAllRigidBodies();
@@ -104,13 +103,11 @@ void AStake::OnActorBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 
 	PhysicsHandle->RegisterComponent();
 	PhysicsHandles.AddUnique(PhysicsHandle);
-	//PhysicsHandle->SetLinearStiffness(1000.f);
 	
 	PhysicsHandle->GrabComponentAtLocation(SkeletalMesh, SweepResult.BoneName, SkeletalMesh->GetBoneLocation(SweepResult.BoneName));
 
-	//update character propoerties
+	//update character properties
 	Character->SetActorTickEnabled(true);
-	//Character->bIsGrabbed = true;
 	Character->bIsRagdoll = true;
 	Character->bIsRecovering = false;
 	Character->bIsPlayingGetUpAnim = false;
@@ -171,7 +168,7 @@ void AStake::Tick(float DeltaTime)
 
 	float velo = this->GetVelocity().Size();
 
-	//for some reason after hit speed goes to max so to supress that I set max speed in every tick
+	//for some reason after hit event speed goes to max so to suppress that I set max speed in every tick
 	ProjectileMovement->MaxSpeed = velo;
 
 	//compute drag force from drag force equation, divide by million to switch from meters to cm
@@ -185,6 +182,7 @@ void AStake::Tick(float DeltaTime)
 	{
 			AMyEnemy* enemy = Cast<AMyEnemy>(PhysicsHandle->GetGrabbedComponent()->GetOwner());
 			//this allows for only one impalement but prevent ragdoll twitching
+			//ragdoll twitching is caused by ragdoll being grabbed after stake goes through the wall, this could be improved...
 			if (enemy && !enemy->bIsImpaled)
 			{
 				PhysicsHandle->SetTargetLocation(CollisionComponent->GetComponentLocation());
@@ -200,7 +198,6 @@ void AStake::LifeSpanExpired()
 {
 	if (PiercedEnemy)
 	{
-		//PiercedEnemy->bIsGrabbed = false;
 		PiercedEnemy->currStake = nullptr;
 		PiercedEnemy = nullptr;
 	}

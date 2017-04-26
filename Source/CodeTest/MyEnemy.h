@@ -58,18 +58,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation")
 	UAnimSequence * AnimRight;
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Anims")
-	UBlendSpace1D *AnimBlendSpaceFront;
-
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Anims")
-	UBlendSpace1D *AnimBlendSpaceBack;
-
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Anims")
-	UBlendSpace1D *AnimBlendSpaceLeft;
-
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Anims")
-	UBlendSpace1D *AnimBlendSpaceRight;
-
 	enum class ECharacterOreintation
 	{
 		FRONT,
@@ -106,10 +94,9 @@ public:
 	FTransform AMyEnemy::GetBoneTransformAtTime(UAnimSequence* MyAnimSequence, float AnimTime, int16 BoneIdx, bool bUseRawDataOnly);
 
 	AStake* currStake = nullptr;
+
 	//for state tracking
 	bool bIsInactive = false;
-
-	//bool bIsGrabbed = false;
 
 	bool bIsImpaled = false;
 
